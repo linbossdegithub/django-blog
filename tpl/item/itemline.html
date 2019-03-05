@@ -1,0 +1,35 @@
+{% load i18n %}
+<div class="item">
+    <div class="avatar-area"><div class="avatar" style="background: url({% if item.user.userprofile.openid %}{% if '//' not in item.user.userprofile.avatar.name %}/s/{% endif %}{{ item.user.userprofile.avatar }}{% else %}{% if item.user.userprofile.avatar %}/s/{{ item.user.userprofile.avatar }}{% else %}/s/avatar/n.png{% endif %}{% endif %}) no-repeat;background-size: cover;background-position: center; filter: progid:DXImageTransform.Microsoft.AlphaImageLoader( src='{% if item.user.userprofile.openid %}{% if '//' not in item.user.userprofile.avatar.name %}/s/{% endif %}{{ item.user.userprofile.avatar }}{% else %}{% if item.user.userprofile.avatar %}/s/{{ item.user.userprofile.avatar }}{% else %}/s/avatar/n.png{% endif %}{% endif %}', sizingMethod='scale'); -ms-filter: 'progid:DXImageTransform.Microsoft.AlphaImageLoader( src='{% if item.user.userprofile.openid %}{% if "//" not in item.user.userprofile.avatar.name %}/s/{% endif %}{{ item.user.userprofile.avatar }}{% else %}{% if item.user.userprofile.avatar %}/s/{{ item.user.userprofile.avatar }}{% else %}/s/avatar/n.png{% endif %}{% endif %}', sizingMethod='scale')';">{% if not item.url %}<a href="/{{ item.user.username }}/">{% endif %}<img src="{% if item.user.userprofile.openid %}{% if '//' not in item.user.userprofile.avatar.name %}/s/{% endif %}{{ item.user.userprofile.avatar }}{% else %}{% if item.user.userprofile.avatar %}/s/{{ item.user.userprofile.avatar }}{% else %}/s/avatar/n.png{% endif %}{% endif %}" alt="{{ item.user.username }}" />{% if not item.url %}</a>{% endif %}</div></div>
+    <div class="item-line">
+        <div class="item-info">
+            <span class="item-info-right"><a class="item-created">{% if item.lastsubitem.create %}{% blocktrans with item.lastsubitem.create|timesince as update %}{{ update }}{% endblocktrans %}{% else %}{% blocktrans with item.itemcontent_set.last.create|timesince as update %}{{ update }}{% endblocktrans %}{% endif %}{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}前{% else %} ago{% endif %}</a>
+            </span>
+
+            <span class="item-info-left">
+                {% if item.url %}
+                <span class="username">{{ item.user.username }}</span>
+                {% else %}
+                <a class="item-author" href="/{{ item.user.username }}/"><span class="username">{{ item.user.username }}</span></a>
+                {% endif %}
+
+                <span class="userinfo">{{ item.user.userprofile.info }}</span>
+            </span>
+        </div>
+        <div class="item-title-line">
+        {% if item.url %}
+            <div class="item-title-box"><a class="item-title" href="{{ item.url }}" target="blank">{{ item.title }}</a></div>
+        {% else %}
+            {% if item.subitemcount %}
+            <div class="subitemcount-box"><a class="subitemcount" href="/i/{{ item.id }}/#{{ item.lastsubitem.id }}">{{ item.subitemcount }}</a></div>
+            {% endif %}
+            <div class="item-title-box"><a class="item-title" href="/i/{{ item.id }}/">{{ item.title }}</a></div>
+        {% endif %}
+        </div>
+        <div class="item-tags">
+        {% for tag in item.tag.all %}
+            <div class="item-tag"><a href="/t/{{ tag.id }}/">{{ tag.name }}</a></div>
+        {% endfor %}
+        </div>
+    </div>
+</div>

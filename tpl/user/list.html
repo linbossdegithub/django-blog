@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}用户列表{% else %}User List{% endif %} - {% endblock %}
+
+{% block content %}
+    <div class="content userlist">
+        <h3>{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}用户列表{% else %}User List{% endif %}</h3>
+        <div class="items">
+        {% for user in users %}
+        {% if user.userprofile %}
+        <div class="item">
+            <div class="avatar-area"><div class="avatar" style="background: url({% if user.userprofile.openid %}{% if '//' not in user.userprofile.avatar.name %}/s/{% endif %}{{ user.userprofile.avatar }}{% else %}{% if user.userprofile.avatar %}/s/{{ user.userprofile.avatar }}{% else %}/s/avatar/n.png{% endif %}{% endif %}) no-repeat;background-size: cover;background-position: center; filter: progid:DXImageTransform.Microsoft.AlphaImageLoader( src='{% if user.userprofile.openid %}{% if '//' not in user.userprofile.avatar.name %}/s/{% endif %}{{ user.userprofile.avatar }}{% else %}{% if user.userprofile.avatar %}/s/{{ user.userprofile.avatar }}{% else %}/s/avatar/n.png{% endif %}{% endif %}', sizingMethod='scale'); -ms-filter: 'progid:DXImageTransform.Microsoft.AlphaImageLoader( src='{% if user.userprofile.openid %}{% if "//" not in user.userprofile.avatar.name %}/s/{% endif %}{{ user.userprofile.avatar }}{% else %}{% if user.userprofile.avatar %}/s/{{ user.userprofile.avatar }}{% else %}/s/avatar/n.png{% endif %}{% endif %}', sizingMethod='scale')';"><a href="/{{ user.username }}/"><img src="{% if user.userprofile.openid %}{% if '//' not in user.userprofile.avatar.name %}/s/{% endif %}{{ user.userprofile.avatar }}{% else %}{% if user.userprofile.avatar %}/s/{{ user.userprofile.avatar }}{% else %}/s/avatar/n.png{% endif %}{% endif %}" /></a></div></div>
+            <div class="item-line">
+                <div class="item-info">
+                    <span class="item-info-right"><a class="item-created">{{ user.userprofile.create|date:'Y-m-d' }}</a>
+                    </span>
+
+                    <span class="item-info-left">
+                        {% if url %}<!--fetch-->
+                        <span class="username">{{ user.username }}</span>
+                        {% else %}
+                        <a class="item-author" href="/{{ user.username }}/"><span class="username">{{ user.username }}</span></a>
+                        {% endif %}
+
+                        <span class="userinfo">{{ user.userprofile.info }}</span>
+                    </span>
+                </div>
+                <div class="item-title">
+                    <br />
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+        {% if users.paginator.num_pages > 1 %}
+        <div class="pagination">
+            <span class="step-links">
+                {% if users.has_previous %}
+                    <a class="previous-page" href="?page={{ users.previous_page_number }}">{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}上一页{% else %}Previous{% endif %}</a>
+                {% endif %}
+
+                <span class="current">
+                    {{ users.number }} / {{ users.paginator.num_pages }}
+                </span>
+
+                {% if users.has_next %}
+                    <a class="next-page" href="?page={{ users.next_page_number }}">{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}下一页{% else %}Next{% endif %}</a>
+                {% endif %}
+            </span>
+        </div>
+        {% endif %}
+        </div>
+    </div>
+{% endblock %}

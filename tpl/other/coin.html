@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+
+{% block title %}{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}虚拟数字货币管理{% else %}Cryptocurrency Manage{% endif %} - {% endblock %}
+{% block extra_head %}
+    <style type="text/css">
+        div.coin { border-collapse: collapse; text-align: center; }
+        div.coin-head, div.coin-body, div.coin-tr { display: table; width: 100%; border-collapse: collapse; }
+        div.coin-body { margin-top: 7px; }
+        div.coin-th, div.coin-td { display: table-cell; border: 1px solid white; text-align: center; padding: 3px; height: 36px; max-height: 36px; vertical-align: middle; word-wrap: break-word; word-break: break-all; overflow: hidden; text-overflow: ellipsis; }
+        div.coin-th { font-weight: bold; background: skyblue; color: white; }
+        div.coin-tr { border: 1px solid lightgray; }
+        div.coin-type { width: 16%; } div.coin-hold { width: 20%; } div.coin-price { width: 20%; } div.coin-holdvalue { width: 20%; } div.coin-operate { width: 16%; } div.coin-td.coin-hold { background: whitesmoke; }
+        .coin-type-select { width: 100%; font-size: small; overflow: hidden; text-align-last: center; }
+        div.coin-add-button, div.coin-delete-button, div.coin-refresh-button { width: 36px; cursor: pointer; font-size: small; padding: 3px; margin: 0 auto; border-radius: 3px; -webkit-border-radius: 3px; -moz-border-radius: 3px; color: white; }
+        div.coin-add-button { background: green; } div.coin-delete-button { background: red; } div.coin-refresh-button { background: orange; display: inline-block; }
+    </style>
+{% endblock %}
+{% block content %}
+    <div class="content coin">
+        <div class="coin-head">
+            <div class="coin-th coin-type">币种</div>
+            <div class="coin-th coin-hold">持有</div>
+            <div class="coin-th coin-price">单价</div>
+            <div class="coin-th coin-holdvalue">价值</div>
+            <div class="coin-th coin-operate">操作</div>
+        </div>
+
+        <div class="coin-body">
+            <!--{% for coin in coins %}
+            <div class="coin-tr coin-line {{ coin.cointype }}">
+                <div class="coin-td coin-type">{{ coin.cointype }}</div>
+                <div class="coin-td coin-hold" contenteditable="true">{{ coin.coinhold }}</div>
+                <div class="coin-td coin-price"></div>
+                <div class="coin-td coin-holdvalue"></div>
+                <div class="coin-td coin-operate">
+                    <div class="coin-delete-button">删除</div>
+                </div>
+            </div>
+            {% endfor %}-->
+            <div class="coin-tr coin-add-line">
+                <div class="coin-td coin-type">
+                    <select class="coin-type-select">
+                    </select>
+                </div>
+                <div class="coin-td coin-hold" contenteditable="true" placeholder="增加或修改持有数量"></div>
+                <div class="coin-td coin-price"></div>
+                <div class="coin-td coin-holdvalue"></div>
+                <div class="coin-td coin-operate">
+                    <div class="coin-add-button">增加</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="coin-total">虚拟数字货币总值 <span class="coin-total-value">0</span> 元。<div class="coin-refresh-button">刷新</div></div>
+    </div>
+{% endblock %}
+
+{% block footer %}
+<script type="text/javascript">
+    $(document).ready(function(){
+        //更新本地存储记录
+        var setcoinhold = function(type, hold){
+            if (type != "" && jQuery.isNumeric(hold) && hold >= 0){
+                if (localStorage.coins){
+                    coins = JSON.parse(localStorage.coins);
+                } else {
+                    coins = new Array();
+                }
+                var coinexist = 0;
+                for (var i in coins){
+                    if (coins[i].type == type){
+                        coins[i].hold = hold;
+                        coinexist = 1;
+                    }
+                }
+                if (coinexist == 0) {
+                    coins.push({"type": type, "hold": hold});
+                }
+                localStorage.coins = JSON.stringify(coins);
+            }
+        }
+
+        //保存到服务器并更新本地记录
+        var savecoin = function(cointype, coinhold){
+            {% if user.is_authenticated %}
+            $.ajax({
+                type: "POST",
+                data: {
+                    "csrfmiddlewaretoken": "{{ csrf_token }}",
+                    "operate": "add",
+                    "cointype": cointype,
+                    "coinhold": coinhold
+                },
+                success: function(){
+                    setcoinhold(cointype, coinhold);
+                    refresh();
+                },
+                error: function(){
+                    savecoin(cointype, coinhold);
+                }
+            });
+            {% else %}
+            setcoinhold(cointype, coinhold);
+            refresh();
+            {% endif %}
+        }
+
+        //删除本地存储记录
+        var delcoinhold = function(type){
+            if (type != ""){
+                if (localStorage.coins){
+                    coins = JSON.parse(localStorage.coins);
+                    coins = $.grep(coins, function(coin) {
+                        return coin.type != type;
+                    });
+
+                    if (coins.length == 0){
+                        localStorage.removeItem("coins");
+                    } else {
+                        localStorage.coins = JSON.stringify(coins);
+                    }
+                }
+            }
+        }
+
+        //从服务器删除
+        var deletecoin = function(cointype){
+            {% if user.is_authenticated %}
+            $.ajax({
+                type: "POST",
+                data: {
+                    "csrfmiddlewaretoken": "{{ csrf_token }}",
+                    "operate": "del",
+                    "cointype": cointype
+                },
+                success: function(){
+                    delcoinhold(cointype);
+                    refresh();
+                },
+                error: function(){
+                    deletecoin(cointype, coinhold);
+                }
+            });
+            {% else %}
+            delcoinhold(cointype);
+            refresh();
+            {% endif %}
+        }
+
+        //根据API获取最新数据并刷新界面表格数据
+        var refresh = function(){
+            $.ajax({
+                url: "?type=json&" + Math.random(),
+                type: "GET",
+                dataType: "json",
+                success: function(data){
+                    var coins = data.coins;
+                    var markets = data.markets;
+                    if (markets != null){
+                        //用户已登录，获取云端数据
+                        {% if user.is_authenticated %}
+                            if (coins.length == 0){ //如果云端数据为空，本地不为空，选择是否保存本地数据到云端
+                                if (localStorage.coins){
+                                    coins = JSON.parse(localStorage.coins);
+                                    var saveconfirm = confirm("是否保存本地记录到云端？");
+                                    if (saveconfirm == true){
+                                        coins = JSON.parse(localStorage.coins);
+                                        for (var i in coins){
+                                            savecoin(coins[i].type, coins[i].hold);
+                                        }
+                                    } else {
+                                        localStorage.removeItem("coins");
+                                    }
+                                }
+                            } else {    //如果云端数据不为空，直接显示云端数据，并更新本地记录
+                                if (localStorage.coins){
+                                    localStorage.removeItem("coins");
+                                }
+                                for (var i in coins){
+                                    setcoinhold(coins[i].type, coins[i].hold);
+                                }
+                            }
+                        //用户未登录，读取本地记录
+                        {% else %}
+                        if (localStorage.coins){
+                            coins = JSON.parse(localStorage.coins);
+                        }
+                        {% endif %}
+                        showcoins(coins, markets);
+                    } else {
+                        refresh();
+                    }
+                },
+                error: function(){
+                    refresh();
+                }
+            });
+        }
+
+        //根据记录数组重新渲染dom、绑定事件并刷新价格信息
+        var showcoins = function(coins, markets){
+            $(".coin-body .coin-line").remove();
+
+            for (var i in coins){
+                var coin = coins[i];
+                var price = "";
+                for (var j in markets){
+                    if(markets[j].symbol == coin.type){
+                        price = markets[j].price_cny;
+                    }
+                }
+                $(".coin-body .coin-add-line").before('\
+                    <div class="coin-tr coin-line ' + coin.type + '">\
+                        <div class="coin-td coin-type">' + coin.type + '</div>\
+                        <div class="coin-td coin-hold" contenteditable="true">' + coin.hold + '</div>\
+                        <div class="coin-td coin-price">' + price + '</div>\
+                        <div class="coin-td coin-holdvalue"></div>\
+                        <div class="coin-td coin-operate">\
+                            <div class="coin-delete-button">删除</div>\
+                        </div>\
+                    </div>\
+                ');
+            }
+            //更新下拉框选项
+            $(".coin-type-select").html("");
+            for (i in markets){
+                var coinexist = 0;
+                $(".coin-line .coin-type").each(function(){
+                    if ($(this).text() == markets[i].symbol){
+                        coinexist = 1;
+                    }
+                });
+                if (coinexist == 0){
+                    $(".coin-type-select").append("<option value=\"" + markets[i].symbol + "\">" + markets[i].symbol + "</option>");
+                }
+            }
+
+            //绑定输入框事件
+            $(".coin-line .coin-hold").each(function(){
+                $(this).on("input propertychange paste change", function(){
+                    savecoin($(this).prev(".coin-type").text(), $(this).text());
+                });
+            });
+
+            //绑定删除按钮事件
+            $(".coin-line .coin-operate .coin-delete-button").each(function(){
+                $(this).click(function(){
+                    var deleteconfirm = confirm("确定要删除这条记录？");
+                    if (deleteconfirm == true){
+                        deletecoin($(this).closest(".coin-line").find(".coin-type").text());
+                    }
+                });
+            });
+
+            //更新价值
+            var cointotalvalue = 0;
+            $(".coin-line .coin-type").each(function(){
+                var cointype = $(this).text();
+                $(".coin-line." + cointype + " .coin-holdvalue").text(parseFloat($(".coin-line." + cointype + " .coin-hold").text()) * parseFloat($(".coin-line." + cointype + " .coin-price").text()));
+                cointotalvalue += parseFloat($(".coin-line." + cointype + " .coin-holdvalue").text());
+            });
+            $(".coin-total-value").text(cointotalvalue);
+            $(".coin-refresh-button").css("visibility", "visible");
+        }
+
+        if ($(".coin-line").length == 0){
+            refresh();
+        }
+
+        $(".coin-add-line .coin-operate .coin-add-button").click(function(){
+            if( $(this).closest(".coin-add-line").find(".coin-hold").text() == "" || !jQuery.isNumeric($(this).closest(".coin-add-line").find(".coin-hold").text()) || $(this).closest(".coin-add-line").find(".coin-hold").text() <0 ){
+                $(this).closest(".coin-add-line").find(".coin-hold").focus();
+                return false;
+            }
+
+            savecoin($(this).closest(".coin-add-line").find(".coin-type-select").val(), $(this).closest(".coin-add-line").find(".coin-hold").text());
+            $(this).closest(".coin-add-line").find(".coin-hold").text("");
+        });
+
+        $(".coin-refresh-button").click(function(){
+            $(this).css("visibility", "hidden");
+            refresh();
+        });
+
+        /*var looprefresh = function(){
+            refresh();
+            setTimeout(looprefresh, 3000);
+        }
+
+        looprefresh();*/
+    });
+</script>
+{% endblock %}

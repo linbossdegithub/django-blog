@@ -1,0 +1,64 @@
+@media screen and (max-width: 1200px) {
+    .wrapper {
+        width: 96%;
+    }
+    .content.item, .content.home, .content-header {
+        width: 60%;
+    }
+    .sidebar {
+        min-width: 230px;
+        /*margin: 17px 0 17px 0;*/
+        padding: 0 7px 0 7px;
+        position: fixed;
+        right: 2%;
+    }
+    .sidebar .widget {
+        /*padding: 8% 7%;*/
+        margin-bottom: 10px;
+    }
+    .sidebar .widget:last-child {
+        /*padding: 8% 7%;*/
+        margin-bottom: 0;
+    }
+}
+
+@media screen and (max-width: 960px) {
+    .container {
+        padding-left: 0;
+        padding-right: 0;
+    }
+    .content, .content.item, .content.home, .content-header {
+        width: 100%;
+        float: none;
+        padding-left: 0;
+        padding-right: 0;
+    }
+    .content-header {
+        padding-left: 0;
+        padding-right: 0;
+    }
+    .sidebar {
+        width: 100%;
+        float: none;
+        position: relative;
+        left: 0;
+        margin-left: 0;
+        padding-left: 0;
+        padding-right: 0;
+    }
+    input:not(.file-input):not(.qstr):not(.userinfoinput):not(.item-tag-name):not(.item-tag-submit), textarea, .cancel-btn a {
+        width: 100%;
+    }
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+.video embed,
+.video object,
+.video iframe {
+    width: 100%;
+    height: auto;
+}

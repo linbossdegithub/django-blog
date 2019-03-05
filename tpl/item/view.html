@@ -1,0 +1,336 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% if item %}{{ item.title }}{% else %}{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}页面不存在{% else %}Page Not Found{% endif %}{% endif %} - {% endblock %}
+
+{% block content %}
+    <div class="content item">
+    {% if item %}
+        <div class="avatar-area">
+            <div class="avatar" style="background: url({% if item.user.userprofile.openid %}{% if '//' not in item.user.userprofile.avatar.name %}/s/{% endif %}{{ item.user.userprofile.avatar }}{% else %}{% if item.user.userprofile.avatar %}/s/{{ item.user.userprofile.avatar }}{% else %}/s/avatar/n.png{% endif %}{% endif %}) no-repeat;background-size: cover;background-position: center; filter: progid:DXImageTransform.Microsoft.AlphaImageLoader( src='{% if item.user.userprofile.openid %}{% if '//' not in item.user.userprofile.avatar.name %}/s/{% endif %}{{ item.user.userprofile.avatar }}{% else %}{% if item.user.userprofile.avatar %}/s/{{ item.user.userprofile.avatar }}{% else %}/s/avatar/n.png{% endif %}{% endif %}', sizingMethod='scale'); -ms-filter: 'progid:DXImageTransform.Microsoft.AlphaImageLoader( src='{% if item.user.userprofile.openid %}{% if "//" not in item.user.userprofile.avatar.name %}/s/{% endif %}{{ item.user.userprofile.avatar }}{% else %}{% if item.user.userprofile.avatar %}/s/{{ item.user.userprofile.avatar }}{% else %}/s/avatar/n.png{% endif %}{% endif %}', sizingMethod='scale')';"><a href="/{{ item.user.username }}/"><img src="{% if item.user.userprofile.openid %}{% if '//' not in item.user.userprofile.avatar.name %}/s/{% endif %}{{ item.user.userprofile.avatar }}{% else %}{% if item.user.userprofile.avatar %}/s/{{ item.user.userprofile.avatar }}{% else %}/s/avatar/n.png{% endif %}{% endif %}" /></a></div>
+        </div>
+        <div class="item-head">
+            <div class="item-info">
+                <span class="item-info-right"><a class="item-created">{% with item.itemcontent_set.all|first as itemcontent %}<!--{{ itemcontent.create|date:'Y-m-d H:i:s'}}-->{% blocktrans with itemcontent.create|timesince as create %}{{ create }}{% endblocktrans %}{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}前{% else %} ago{% endif %}{% endwith %}</a></span>
+
+                <span class="item-info-left"><a class="username" href="/{{ item.user.username }}/"><span class="username">{{ item.user.username }}</span></a>
+
+                <span class="userinfo">{{ item.user.userprofile.info }}</span></span>
+            </div>
+            <h3 class="item-title"><a href="/i/{{ item.id }}/">{{ item.title }}</a></h3>
+            <div class="item-tags">{% for tag in item.tag.all %}<div class="item-tag"><a href="/t/{{ tag.id }}/">{{ tag.name }}</a></div>{% endfor %}</div>
+
+        </div>
+        <form class="additemtag" method="post">
+            {% if item.user.username == user.username %}
+            <span class="additemtagform" style="display: none;">
+                {% csrf_token %}
+                <input class="item-tag-name" name="tagname" type="text" />
+                <input class="submit item-tag-submit" type="submit" value="{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}添加{% else %}Add{% endif %}" />
+            </span>
+            {% endif %}
+            <span class="operate">
+                {% if item.user.username == user.username %}
+                <a class="updatetag-btn" href="" style="">{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}编辑话题{% else %}Edit Tags{% endif %}</a>
+                <a class="updateitem-btn" href="/i/update/{{ item.id }}/#update-form">{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}更新信息{% else %}Update Post{% endif %}</a>
+                {% endif %}
+                {% if user.id == 1 and item.status != 'private' %}
+                <a class="hideitem-btn" href="" style="">{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}隐藏信息{% else %}Hide Post{% endif %}</a>
+                {% endif %}
+            </span>
+        </form>
+        <div class="line">
+        {% for itemcontent in item.itemcontent_set.all %}
+            <div class="itemcontent">
+                {% if forloop.last %}
+                <p class="updated"><!--{{ itemcontent.create|date:'Y-m-d H:i:s' }}-->{% blocktrans with itemcontent.create|timesince as create %}{{ create }}{% endblocktrans %}{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}前{% else %} ago{% endif %}</p>
+                <div class="itemcontent-content"><pre>{{ item.firstcontent }}</pre></div>
+                {% else %}
+                <p class="updated"><!--{{ itemcontent.create|date:'Y-m-d H:i:s' }}-->{% blocktrans with itemcontent.create|timesince as create %}{{ create }}{% endblocktrans %}{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}前{% else %} ago{% endif %}</p>
+                <div class="itemcontent-content"><pre>{{ itemcontent.content }}</pre></div>
+                {% endif %}
+                {% for attachmentfile in itemcontent.contentattachment_set.all %}
+                    {% if 'svg' in attachmentfile.contenttype %}
+                    {{ attachmentfile.content|safe }}
+                    {% elif 'image' in attachmentfile.contenttype %}
+                    <p><img src="/s/{{ attachmentfile.file }}" title="{{ attachmentfile.title }}" /></p>
+                    {% elif 'audio' in attachmentfile.contenttype %}
+                    <p><audio controls>
+                        <source src="/s/{{ attachmentfile.file }}" type="audio/ogg">
+                        <a href="/s/{{ attachmentfile.file }}"><span style="font-style: italic;">({% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}附件{% else %}Attachment{% endif %})</span> {{ attachmentfile.title }}</a>
+                    </audio></p>
+                    {% else %}
+                    <p><a href="/s/{{ attachmentfile.file }}"><span style="font-style: italic;">({% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}附件{% else %}Attachment{% endif %})</span> {{ attachmentfile.title }}</a></p>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% endfor %}
+        </div>
+        {% if item.user.username == user.username %}
+            <p class="operate">
+                <a class="updateitem-btn" href="/i/update/{{ item.id }}/#update-form">{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}更新信息{% else %}Update Post{% endif %}</a>
+            </p>
+            <form class="itemform updateitemform" method="post" enctype="multipart/form-data" action="/i/update/{{ item.id }}/">
+                {% csrf_token %}
+                <p class="description"><textarea name="content">{% if form.content.value %}{{ form.content.value }}{% else %}{{ item.itemcontent_set.last.content }}{% endif %}</textarea></p>
+                <!--<p>{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}附件{% else %}Attachment{% endif %}：
+                <br />
+                <input class="file" name="file" type="file" />
+                <br />
+                (<2MB)</p>-->
+                <p class="submit-btn"><input class="submit" type="submit" value="{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}更新信息{% else %}Update Post{% endif %}" /></p>
+                <p class="cancel-btn"><a href="/i/{{ item.id }}/">{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}取消{% else %}Cancel{% endif %}</a></p>
+            </form>
+        {% endif %}
+
+        <h3>{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}评论{% else %}Comment{% endif %}</h3>
+        <div class="comments">
+        {% if items %}
+            {% for subitem in items %}
+                <div class="comment" id="{{ subitem.id }}">
+                    <div class="comment-avatar-area"><div class="comment-avatar" style="background: url({% if subitem.user.userprofile.openid %}{% if '//' not in subitem.user.userprofile.avatar.name %}/s/{% endif %}{{ subitem.user.userprofile.avatar }}{% else %}{% if subitem.user.userprofile.avatar %}/s/{{ subitem.user.userprofile.avatar }}{% else %}/s/avatar/n.png{% endif %}{% endif %}) no-repeat;background-size: cover;background-position: center; filter: progid:DXImageTransform.Microsoft.AlphaImageLoader( src='{% if subitem.user.userprofile.openid %}{% if '//' not in subitem.user.userprofile.avatar.name %}/s/{% endif %}{{ subitem.user.userprofile.avatar }}{% else %}{% if subitem.user.userprofile.avatar %}/s/{{ subitem.user.userprofile.avatar }}{% else %}/s/avatar/n.png{% endif %}{% endif %}', sizingMethod='scale'); -ms-filter: 'progid:DXImageTransform.Microsoft.AlphaImageLoader( src='{% if subitem.user.userprofile.openid %}{% if "//" not in subitem.user.userprofile.avatar.name %}/s/{% endif %}{{ subitem.user.userprofile.avatar }}{% else %}{% if subitem.user.userprofile.avatar %}/s/{{ subitem.user.userprofile.avatar }}{% else %}/s/avatar/n.png{% endif %}{% endif %}', sizingMethod='scale')';"><a href="/{{ subitem.user.username }}/"><img src="{% if subitem.user.userprofile.openid %}{% if '//' not in subitem.user.userprofile.avatar.name %}/s/{% endif %}{{ subitem.user.userprofile.avatar }}{% else %}{% if subitem.user.userprofile.avatar %}/s/{{ subitem.user.userprofile.avatar }}{% else %}/s/avatar/n.png{% endif %}{% endif %}" /></a></div></div>
+                    <div class="item-line">
+                        <div class="item-info">
+                            <span class="item-info-right"><a class="item-created">{% with subitem.itemcontent_set.all|first as itemcontent %}<!--{{ itemcontent.create|date:'Y-m-d H:i:s' }}-->{% blocktrans with itemcontent.create|timesince as create %}{{ create }}{% endblocktrans %}{% endwith %}{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}前{% else %} ago{% endif %}</a></span>
+
+                            <span class="comment-author"><a class="usernamelabel" href="/{{ subitem.user.username }}/"><span class="username">{{ subitem.user.username }}</span></a>
+                            <span class="userinfo">{{ subitem.user.userprofile.info }}</span></span>
+                        </div>
+
+                            <div class="reply-info">
+                            {% if subitem.belong and item not in subitem.belong.all %}
+                                <div class="comment-reply-to">
+                                {% for i in subitem.belong.all %}
+                                    <span class="comment-author"><a class="usernamelabel" href="/{{ i.user.username }}/"><span class="username">{{ i.user.username }}</span></a>
+                            <span class="userinfo">{{ i.user.userprofile.info }}</span></span><div class="itemcontent-content"><pre>{% with i.itemcontent_set.all|first as itemcontent %}{{ itemcontent.content }}{% endwith %}</pre></div>
+                                {% endfor %}
+                                </div>
+                            {% endif %}
+                            </div>
+                        {% for itemcontent in subitem.itemcontent_set.all %}
+                        <div class="itemcontent">
+                            <div class="itemcontent-content"><pre>{{ itemcontent.content }}</pre></div>
+
+                            {% for attachmentfile in itemcontent.contentattachment_set.all %}
+                                {% if 'svg' in attachmentfile.contenttype %}
+                                {{ attachmentfile.content|safe }}
+                                {% elif 'image' in attachmentfile.contenttype %}
+                                <p><img src="/s/{{ attachmentfile.file }}" title="{{ attachmentfile.title }}" /></p>
+                                {% elif 'audio' in attachmentfile.contenttype %}
+                                <p><audio controls>
+                                    <source src="/s/{{ attachmentfile.file }}" type="audio/ogg">
+                                    <a href="/s/{{ attachmentfile.file }}"><span style="font-style: italic;">({% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}附件{% else %}Attachment{% endif %})</span> {{ attachmentfile.title }}</a>
+                                </audio></p>
+                                {% else %}
+                                <p><a href="/s/{{ attachmentfile.file }}"><span style="font-style: italic;">({% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}附件{% else %}Attachment{% endif %})</span> {{ attachmentfile.title }}</a></p>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        {% endfor %}
+
+                    </div>
+                    <div class="comment-operate">
+                        <a class="comment-reply" href="{% if user.is_authenticated %}?reply={{ subitem.id }}#comment-form{% else %}{% url 'login' %}?next={{ request.path }}?reply={{ subitem.id }}#comment-form{% endif %}">{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}回复{% else %}Reply{% endif %}</a>
+                    </div>
+                </div>
+            {% endfor %}
+            {% if items.paginator.num_pages > 1 %}
+            <div class="pagination">
+                <span class="step-links">
+                    {% if items.has_previous %}
+                        <a href="?page={{ items.previous_page_number }}">{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}上一页{% else %}Previous{% endif %}</a>
+                    {% endif %}
+
+                    <span class="current">
+                        {{ items.number }} / {{ items.paginator.num_pages }}
+                    </span>
+
+                    {% if items.has_next %}
+                        <a href="?page={{ items.next_page_number }}">{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}下一页{% else %}Next{% endif %}</a>
+                    {% endif %}
+                </span>
+            </div>
+            {% endif %}
+        {% else %}
+            <p>{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}暂无评论。{% else %}No Comment Yet.{% endif %}</p>
+        {% endif %}
+        </div>
+
+        {% if user.is_authenticated %}
+        {{ form.content.errors }}{{ form.file.errors }}
+        <form method="post" class="comment-form itemform" id="comment-form" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input class="comment-parent" name="reply" type="hidden"{% if request.GET.reply %} value="{{ request.GET.reply }}"{% endif %} />
+            <div class="comment-content">{% if reply %}<div class="comment-reply-to-users">{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}回复{% else %}Reply to{% endif %} <a class="comment-reply-to-user">{{ reply.user.username }}</a></div>{% endif %}<textarea name="content">{{ form.content.value }}</textarea></div>
+            <!--<p>{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}附件{% else %}Attachment{% endif %}：
+            <br />
+            <input class="file" name="file" type="file" />
+            <br />
+            (<2MB)</p>-->
+            <p class="submit-btn"><input class="submit" type="submit" value="{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}提交{% else %}Submit{% endif %}" /></p>
+        </form>
+        {% else %}
+            <p class="login-link"><a href="{% url 'login' %}?next={% if request.GET.next %}{{ request.GET.next }}{% else %}{{ request.get_full_path }}{% endif %}">{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}登录{% else %}Sign in{% endif %}</a>
+            {% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}或{% else %}or{% endif %}
+            <a href="{% url 'signup' %}?next={% if request.GET.next %}{{ request.GET.next }}{% else %}{{ request.get_full_path }}{% endif %}">{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}注册{% else %}Sign up{% endif %}</a>
+            {% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}以参与评论。{% else %}to post comment.{% endif %}</p>
+            <!--<p><a class="oauthbtn" href="/u/login/?next={% if request.GET.next %}{{ request.GET.next }}{% else %}{{ request.path }}{% endif %}&type=qq"><img src="https://qzonestyle.gtimg.cn/qzone/vas/opensns/res/img/Connect_logo_3.png" /></a></p>-->
+        {% endif %}
+
+    {% else %}
+        <p>{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}抱歉，页面不存在。{% else %}Page Not Found.{% endif %}</p>
+    {% endif %}
+    </div>
+{% endblock %}
+
+{% block sidebar %}
+    <div class="sidebar">
+        {% include "widget/tag.html" %}
+        {% include "widget/about.html" %}
+    </div>
+{% endblock %}
+
+{% block footer %}
+<script type="text/javascript">
+$(document).ready(function(){
+{% if user.is_authenticated %}
+    $(".comment .comment-operate .comment-reply").click(function(){
+        $(".comment .comment-operate .cancel-comment-reply").each(function(){
+            $(this).closest(".comment .comment-operate").find(".comment-reply").show();
+            $(this).remove();
+            return false;
+        });
+
+        $(".comment-form .comment-parent").val($(this).closest(".comment").attr("id"));
+        $(".comment-form .comment-reply-to-users").remove();
+        $(".comment-form .comment-content").prepend("<div class=\"comment-reply-to-users\">{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}回复{% else %}Reply to{% endif %} <a class=\"comment-reply-to-user\">" + $(this).closest(".comment").find(".item-info .comment-author span.username").text() + "</a></div>");
+        $(this).hide();
+        $(this).after("<a class=\"cancel-comment-reply\" href=\"\">{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}取消回复{% else %}Cancel{% endif %}</a>");
+        $(".comment-form").appendTo($(this).closest(".comment"));
+        $(".comment .comment-operate .cancel-comment-reply").click(function(){
+            $(".comment-form .comment-parent").val("");
+            $(".comment-form .comment-content .comment-reply-to-users").remove();
+            $(this).closest(".comment .comment-operate").find(".comment-reply").show();
+            $(this).remove();
+            $(".comment-form").appendTo(".content");
+            return false;
+        });
+        $(".comment-form textarea").focus();
+        return false;
+    });
+
+    $(".updateitem-btn").click(function(){
+        $(".updateitemform").show();
+        $(".updateitemform textarea").focus();
+        $(".updateitem-btn").hide();
+
+        $(".itemcontent").hide();
+
+        return false;
+    });
+    $(".updateitemform .cancel-btn a").click(function(){
+        $(".updateitem-btn").show();
+        $(".updateitemform").hide();
+
+        $(".itemcontent:last-child").show();
+
+        return false;
+    });
+
+    var removetag = function(tagdom){
+        var itemtag = $(this);
+        $.ajax({
+            type: "post",
+            data: {
+                "csrfmiddlewaretoken": "{{ csrf_token }}",
+                "tagname": $(this).text(),
+                "operate": "remove"
+            },
+            success: function(){
+                itemtag.remove();
+            }
+        });
+        return false;
+    };
+    $(".updatetag-btn").click(function(){
+        if ($(".additemtagform").is(":visible")) {
+            $(".additemtagform").hide();
+            $(this).text("{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}编辑话题{% else %}Edit Tags{% endif %}");
+            $(".item-head .item-tags .item-tag a").each(function(){
+                $(this).unbind("click");
+                ajaxget($(this));
+            });
+        } else {
+            $(".additemtagform").show();
+            $(this).text("{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}保存话题{% else %}Save Tags{% endif %}");
+            $(".item-head .item-tags .item-tag a").each(function(){
+                $(this).bind("click", removetag);
+            });
+        }
+        return false;
+    });
+    $(".additemtag").submit(function(){
+        var itemtag = $(this).find(".item-tag-name");
+        var itemtaglist = new Array();
+        $(".item-head .item-tags .item-tag").each(function(){
+            itemtaglist.push($(this).text());
+        });
+        if ( itemtag.val().trim() == "" || $.inArray(itemtag.val(), itemtaglist) != -1 ) {
+            itemtag.val("");
+            itemtag.focus();
+            $(".additemtagform .submit").attr("disabled", false);
+            return false;
+        } else {
+            $.ajax({
+                type: "post",
+                data: {
+                    "csrfmiddlewaretoken": "{{ csrf_token }}",
+                    "tagname": itemtag.val(),
+                    "type": "json"
+                },
+                success: function(data){
+                    $(".item-head .item-tags").append("<div class=\"item-tag\"><a href=\"/t/" + data + "/\">" + itemtag.val() + "</a></div>");
+                    $(".item-head .item-tags .item-tag a").last().bind("click", removetag);
+                    itemtag.val("");
+                    $(".additemtagform .submit").attr("disabled", false);
+                }
+            });
+            return false;
+        }
+    });
+    $(".hideitem-btn").click(function(){
+        var thus = $(this);
+        var confirm = prompt("{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}请输入 YES 以确定：{% else %}Please input YES to comfirm: {% endif %}", "");
+        if (confirm == "YES") {
+            $.ajax({
+                url: "",
+                type: "post",
+                data: {
+                    "csrfmiddlewaretoken": "{{ csrf_token }}",
+                    "status": "private"
+                },
+                success: function(){
+                    thus.remove();
+                }
+            });
+        }
+        return false;
+    });
+{% endif %}
+    $(".content.item .operate").css("visibility", "hidden");
+    $(".content.item").mouseover(function(){
+        $(this).find(".operate").css("visibility", "visible");
+    });
+    $(".content.item").mouseout(function(){
+        $(this).find(".operate").css("visibility", "hidden");
+    });
+    $(".comment-operate").css("visibility", "hidden");
+    $(".comment-operate").closest(".comment").mouseover(function(){
+        $(this).find(".comment-operate").css("visibility", "visible");
+    });
+    $(".comment-operate").closest(".comment").mouseout(function(){
+        $(this).find(".comment-operate").css("visibility", "hidden");
+    });
+});
+</script>
+{% endblock %}

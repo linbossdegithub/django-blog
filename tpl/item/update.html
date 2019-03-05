@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}更新信息{% else %}Update Post{% endif %} - {% endblock %}
+
+{% block content %}
+    {% if user.is_authenticated %}
+        <div class="content item update">
+            {% if item %}
+            <div class="avatar-area">
+                <div class="avatar" style="background: url({% if item.user.userprofile.openid %}{% if '//' not in item.user.userprofile.avatar.name %}/s/{% endif %}{{ item.user.userprofile.avatar }}{% else %}{% if item.user.userprofile.avatar %}/s/{{ item.user.userprofile.avatar }}{% else %}/s/avatar/n.png{% endif %}{% endif %}) no-repeat;background-size: cover;background-position: center;"><a href="/{{ item.user.username }}/"><img src="{% if item.user.userprofile.openid %}{% if '//' not in item.user.userprofile.avatar.name %}/s/{% endif %}{{ item.user.userprofile.avatar }}{% else %}{% if item.user.userprofile.avatar %}/s/{{ item.user.userprofile.avatar }}{% else %}/s/avatar/n.png{% endif %}{% endif %}" /></a></div>
+            </div>
+            <div class="item-head">
+                <div class="item-info">
+                    <span class="item-info-right"><a class="item-created">{% with item.itemcontent_set.all|first as itemcontent %}<!--{{ itemcontent.create|date:'Y-m-d H:i:s'}}-->{% blocktrans with itemcontent.create|timesince as create %}{{ create }}{% endblocktrans %}{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}前{% else %} ago{% endif %}{% endwith %}</a></span>
+
+                    <span class="item-info-left"><a class="username" href="/{{ item.user.username }}/"><span class="username">{{ item.user.username }}</span></a>
+
+                    <span class="userinfo">{{ item.user.userprofile.info }}</span></span>
+                </div>
+                <h3 class="item-title"><a href="/i/{{ item.id }}/">{{ item.title }}</a></h3>
+            </div>
+            <div class="line">
+            {% for itemcontent in item.itemcontent_set.all %}
+                <div class="itemcontent">
+                    {% if forloop.last %}
+                    <div class="itemcontent-content"><pre>{{ item.firstcontent }}</pre></div>
+                    {% else %}
+                    <p class="updated"><!--{{ itemcontent.create|date:'Y-m-d H:i:s' }}-->{% blocktrans with itemcontent.create|timesince as create %}{{ create }}{% endblocktrans %}{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}前{% else %} ago{% endif %}</p>
+                    <div class="itemcontent-content"><pre>{{ itemcontent.content }}</pre></div>
+                    {% endif %}
+                    {% for attachmentfile in itemcontent.contentattachment_set.all %}
+                        {% if 'svg' in attachmentfile.contenttype %}
+                        {{ attachmentfile.content|safe }}
+                        {% elif 'image' in attachmentfile.contenttype %}
+                        <p><img src="/s/{{ attachmentfile.file }}" title="{{ attachmentfile.title }}" /></p>
+                        {% elif 'audio' in attachmentfile.contenttype %}
+                        <p><audio controls>
+                            <source src="/s/{{ attachmentfile.file }}" type="audio/ogg">
+                            <a href="/s/{{ attachmentfile.file }}"><span style="font-style: italic;">({% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}附件{% else %}Attachment{% endif %})</span> {{ attachmentfile.title }}</a>
+                        </audio></p>
+                        {% else %}
+                        <p><a href="/s/{{ attachmentfile.file }}"><span style="font-style: italic;">({% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}附件{% else %}Attachment{% endif %})</span> {{ attachmentfile.title }}</a></p>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% endfor %}
+            <h3 id="update-form">{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}更新信息{% else %}Update Post{% endif %}</h3>
+            <form class="itemform" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <p class="description"><textarea name="content">{% if form.content.value %}{{ form.content.value }}{% else %}{{ item.itemcontent_set.last.content }}{% endif %}</textarea></p>
+                <!--<p>{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}附件{% else %}Attachment{% endif %}：
+                <br />
+                <input class="file" name="file" type="file" />
+                <br />
+                (<2MB)</p>-->
+                <p class="submit-btn"><input class="submit" type="submit" value="{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}更新信息{% else %}Update Post{% endif %}" /></p>
+                <p class="cancel-btn"><a href="/i/{{ item.id }}/">{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}取消{% else %}Cancel{% endif %}</a></p>
+            </form>
+            {% endif %}
+        </div>
+    {% endif %}
+{% endblock %}
+{% block footer %}
+<script type="text/javascript">
+$(document).ready(function(){
+    $("form").submit(function(){
+        $(".submit").attr("disabled", true);
+    });
+});
+</script>
+{% endblock %}

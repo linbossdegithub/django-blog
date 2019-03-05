@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}我的分享{% else %}My Post{% endif %} - {% endblock %}
+
+{% block content %}
+    {% if user.is_authenticated %}
+        <div class="content itemindex">
+            {% include "item/itemlist.html" %}
+            {% include "item/belongitemlist.html" %}
+        </div>
+    {% endif %}
+{% endblock %}

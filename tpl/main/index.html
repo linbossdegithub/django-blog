@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% endblock %}
+
+{% block content %}
+    <div class="content-header">
+            <a class="pathlink homepathlink" href="/">{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}首页{% else %}Home{% endif %}</a>
+            {% if request.GET.q %}
+            <a class="pathlink">></a>
+            <a class="pathlink subpathlink">{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}搜索结果{% else %}Search Result{% endif %}</a>
+            {% endif %}
+            <a class="createintagbtn" href="/i/create/">{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}发布信息{% else %}New Post{% endif %}</a>
+    </div>
+    <div class="content home">
+        <div class="items">
+        {% for item in items %}
+            {% include "item/itemline.html" %}
+        {% endfor %}
+        {% if pitems.paginator.num_pages > 1 %}
+        <div class="pagination">
+            <span class="step-links">
+                {% if pitems.has_previous %}
+                    <a class="previous-page" href="?page={{ pitems.previous_page_number }}">{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}上一页{% else %}Previous{% endif %}</a>
+                {% endif %}
+
+                <span class="current">
+                    {{ pitems.number }} / {{ pitems.paginator.num_pages }}
+                </span>
+
+                {% if pitems.has_next %}
+                    <a class="next-page" href="?page={{ pitems.next_page_number }}">{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}下一页{% else %}Next{% endif %}</a>
+                {% elif request.user.id == 1 and getnews %}<!--for Zhihu-->
+                    {% if request.GET.page %}
+                        <a class="next-page" href="?page={{ request.GET.page|add:1 }}">{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}下一页{% else %}Next{% endif %}</a>
+                    {% else %}
+                        <a class="next-page" href="?page=2">{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}下一页{% else %}Next{% endif %}</a>
+                    {% endif %}<!--for Zhihu-->
+                {% endif %}
+            </span>
+        </div>
+        {% elif request.user.id == 1 and getnews %}<!--for Zhihu-->
+        <div class="pagination">
+            <span class="step-links">
+                <span class="current"></span>
+                {% if request.GET.page %}
+                    <a class="next-page" href="?page={{ request.GET.page|add:1 }}">{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}下一页{% else %}Next{% endif %}</a>
+                {% else %}
+                    <a class="next-page" href="?page=2">{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}下一页{% else %}Next{% endif %}</a>
+                {% endif %}
+            </span>
+        </div><!--for Zhihu-->
+        {% endif %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block sidebar %}
+    <div class="sidebar">
+        {% include "widget/tag.html" %}
+        {% include "widget/about.html" %}
+    </div>
+{% endblock %}
+
+{% block footer %}
+<script type="text/javascript">
+$(document).ready(function(){
+    var load_next_page = function(){
+        if ($(".content.home .items .pagination .next-page").length > 0) {
+            $(".content.home>.items>.item").last().css({"border": "none"});     //去掉末行底部边框
+            $(".content.home .items .pagination .current").hide();
+            $(".content.home .items .pagination .previous-page").hide();
+            $(".content.home .items .pagination .next-page").text("{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}加载更多{% else %}Load More{% endif %}");
+            //$(".content.home .items .pagination .next-page").css({"width": "100%", "height":"30px"});
+            var loadstatus = 0;
+            $(".content.home .items .pagination .next-page").click(function(){
+                if (loadstatus == 1) {
+                    return false;
+                } else {
+                    loadstatus = 1;
+                }
+                var url = $(this).attr("href");
+                $(".content.home .items .pagination .next-page").text("{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}加载中…{% else %}loading...{% endif %}");
+                $(".content.home .items .pagination .next-page").attr("disabled", true);
+                $(".content.home .items .pagination .current").load(url + " .items", function(){
+                    //去掉页数超限情况下的重复项
+                    $(".content.home>.items .pagination .current .items .item").each(function(){
+                        var thus = $(this);
+                        var itemlink = thus.find("a.item-title").attr("href");
+                        $(".content.home>.items>.item").each(function(){
+                            if (itemlink == $(this).find("a.item-title").attr("href")) {
+                                thus.remove();
+                                return true;
+                            }
+                        });
+                    });
+
+                    $(".avatar img, .comment-avatar-area .comment-avatar img").each(function(){
+                        if (!this.complete || typeof(this.naturalWidth) == "undefined" || this.naturalWidth == 0) {
+                            $(this).closest("div").attr("style", $(this).closest("div").attr("style").replace($(this).attr("src"), "/s/avatar/n.png"));
+                            this.src = "/s/avatar/n.png";
+                        }
+                    });
+
+                    $(".content.home>.items>.item").last().css({"border-bottom": "1px solid whitesmoke"});      //还原末行底部边框
+                    $(".content.home>.items>.pagination").after($(".content.home>.items>.pagination .current .items").html());
+                    $(".content.home>.items>.pagination").first().remove();
+                    $("a").not(".musicswitch").unbind("click");
+                    ajaxget($("a").not(".musicswitch"));
+                    load_next_page();
+                });
+                return false;
+            });
+        } else {
+            $(".content.home .items .pagination").remove();
+        }
+    }
+    load_next_page();
+    var loading = function(){
+        if($(".loading").length <= 0){
+            $(".loading").remove();
+            $(".content-header").append("<p class=\"loading\" style=\"color:gray;text-align:center;display:none;\">{% if 'zh' in request.LANGUAGE_CODE or 'zh' in LANGUAGE_CODE %}加载中…{% else %}loading...{% endif %}</p>");
+            $(".loading").slideDown();
+        }
+        $(".content.home").load("/ .items", function(response, status, xhr){
+            $(".items").show();
+            $("a").unbind("click");
+            ajaxget($("a"));
+            load_next_page();
+            $(".loading").slideUp(function(){
+                $(this).remove();
+            });
+        });
+        $.getJSON("/u/notify/?type=json", function(json){
+            if(json.status == "success"){
+                if(json.notify.count != 0){
+                    if ($(".notify-amount").length > 0){
+                        $(".notify-amount").text(json.notify.count);
+                        $(".notify-amount").addClass("notify-amount-new");
+                    } else {
+                        $(".header .right-navbar .accounts-button").after(" <a href=\"/u/notify/\" class=\"notify-amount notify-amount-new\">" + json.notify.count + "</a>");
+                    }
+                } else {
+                    $(".notify-amount").text(json.notify.count);
+                    $(".notify-amount").removeClass("notify-amount-new");
+                }
+            }
+        });
+    }
+    /*$(".header .logo").click(function(){
+        $(window).scrollTop(0);
+        loading();
+        return false;
+    });*/
+    /*
+    var b = document.getElementsByClassName("container")[0];
+    var x,y,scrollTop;
+    var isTouch,isPullDown=false,isPullUp=false;
+
+    b.addEventListener("touchstart", function(evt){
+        var touch = evt.touches[0]; //获取第一个触点
+        //x = Number(touch.pageX); //页面触点X坐标
+        y = Number(touch.pageY); //页面触点Y坐标
+        scrollTop=b.scrollTop;
+        isTouch=true;
+    });
+    b.addEventListener("touchend", function(evt){
+        isTouch=false;
+        isPullDown=false;
+        isPullUp=false;
+    });
+    b.addEventListener("touchmove", function(evt){
+        var touch = evt.touches[0]; //获取第一个触点
+        //var mx = Number(touch.pageX); //页面触点X坐标
+        var my = Number(touch.pageY); //页面触点Y坐标
+
+        if(isTouch){
+            if(my - y > 120){
+                if(b.scrollTop==0){
+                    if(!isPullUp){
+                        isPullUp=true;
+                        loading();
+                    }
+                }
+            }
+            //if( y-my > 100 ){
+            //    if(scrollTop!=0 && scrollTop == b.scrollTop){
+            //        if(!isPullDown){
+            //            isPullDown=true;
+            //        }
+            //    }
+            //}
+        }
+    });
+    */
+});
+</script>
+{% endblock %}
